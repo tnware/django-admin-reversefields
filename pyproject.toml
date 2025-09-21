@@ -1,0 +1,82 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "django-admin-reversefields"
+version = "0.1.0"
+description = "A Django mixin for easily including reverse relationships in your changeforms in the admin"
+authors = [{ name = "Tyler Woods", email = "tyler@tylermade.net" }]
+requires-python = ">=3.10"
+readme = "README.md"
+license = "BSD-2-Clause"
+license-files = ["LICENSE"]
+maintainers = [{ name = "Tyler Woods", email = "tyler@tylermade.net" }]
+keywords = ["django", "admin", "reverse", "relationship", "mixin"]
+classifiers = [
+    "Environment :: Web Environment",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+    "Framework :: Django :: 5.2",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Internet :: WWW/HTTP :: WSGI",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Development Status :: 4 - Beta",
+]
+dependencies = ["django>=4.2"]
+
+[tool.hatch.build]
+exclude = [".vscode", "docs", "tests", "manage.py", "*.py[cod]", "__pycache__"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["django_admin_reversefields"]
+
+[tool.hatch.build.targets.sdist]
+only-include = [
+    "django_admin_reversefields",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+
+[project.urls]
+Homepage = "https://github.com/tnware/django-admin-reversefields"
+Repository = "https://github.com/tnware/django-admin-reversefields"
+Documentation = "https://tnware.github.io/django-admin-reversefields"
+
+[dependency-groups]
+dev = [
+    "responses",
+    "mock",
+    "coverage",
+    "djangorestframework",
+    "django-filter",
+    "ruff>=0.9.10",
+]
+
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["migrations", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

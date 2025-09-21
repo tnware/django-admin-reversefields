@@ -1,0 +1,38 @@
+name: Publish to PyPI
+
+on:
+    release:
+        types: [published]
+    workflow_dispatch:
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: astral-sh/setup-uv@v5
+              with:
+                  version: "0.6.5"
+                  python-version: "3.12"
+                  enable-cache: true
+
+            - name: Clean build artifacts
+              run: rm -rf dist/ build/ *.egg-info
+
+            - name: Install build tooling
+              run: |
+                  uv venv
+                  uv pip install --upgrade build twine
+
+            - name: Build sdist+wheel
+              run: uv run python -m build
+
+            - name: Verify metadata
+              run: uv run python -m twine check dist/*
+
+            - name: Publish to PyPI (password)
+              env:
+                  TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+                  TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+              run: uv run python -m twine upload --non-interactive dist/*

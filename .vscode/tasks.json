@@ -1,0 +1,47 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "uv: sync",
+            "type": "shell",
+            "command": "uv sync",
+            "problemMatcher": []
+        },
+        {
+            "label": "uv: ruff check",
+            "type": "shell",
+            "command": "uv run ruff check .",
+            "problemMatcher": "$eslint-stylish"
+        },
+        {
+            "label": "uv: ruff fix",
+            "type": "shell",
+            "command": "uv run ruff check . --fix",
+            "problemMatcher": "$eslint-stylish"
+        },
+        {
+            "label": "uv: ruff format",
+            "type": "shell",
+            "command": "uv run ruff format .",
+            "problemMatcher": []
+        },
+        {
+            "label": "uv: pytest",
+            "type": "shell",
+            "command": "uv run pytest -q",
+            "problemMatcher": []
+        },
+        {
+            "label": "uv: manage test",
+            "type": "shell",
+            "command": "uv run python manage.py test -v 2",
+            "problemMatcher": []
+        },
+        {
+            "label": "uv: wheel build",
+            "type": "shell",
+            "command": "uv build",
+            "problemMatcher": []
+        }
+    ]
+}

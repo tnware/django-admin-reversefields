@@ -1,0 +1,4 @@
+sphinxcontrib-mermaid
+sphinx-copybutton
+sphinx-design
+shibuya

@@ -1,0 +1,22 @@
+{
+  // Use Ruff for format + fixes
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  // Ruff VS Code extension (native server)
+  "ruff.nativeServer": "on",
+  "ruff.importStrategy": "fromEnvironment",
+  "ruff.interpreter": [
+    ".venv\\Scripts\\python.exe"
+  ],
+  "ruff.configuration": "${workspaceFolder}/pyproject.toml",
+  "ruff.lint.enable": true,
+  "ruff.format.backend": "uv",
+  "python.terminal.activateEnvironment": true,
+  "python.defaultInterpreterPath": ".venv\\Scripts\\python.exe",
+}
