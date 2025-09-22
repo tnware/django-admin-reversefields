@@ -3,8 +3,7 @@ Quickstart
 
 Get up and running with
 :class:`~django_admin_reversefields.mixins.ReverseRelationAdminMixin` in just a
-few steps. The snippets below are pulled directly from the accompanying test
-project so they always reflect a working configuration.
+few steps.
 
 .. contents:: Page contents
    :depth: 1
@@ -51,7 +50,7 @@ objects. Each configuration describes which reverse-side model and
 
 .. literalinclude:: ../tests/admin.py
    :language: python
-   :lines: 1-8
+   :lines: 6-13
    :caption: Required imports in ``admin.py``
 
 Register your :class:`~django.contrib.admin.ModelAdmin` by inheriting from the
@@ -59,9 +58,9 @@ mixin and declaring at least one reverse relation:
 
 .. literalinclude:: ../tests/admin.py
    :language: python
-   :lines: 10-28
+   :lines: 16-46
    :caption: Minimal admin exposing two reverse bindings
-   :emphasize-lines: 4-16
+   :emphasize-lines: 13-31
 
 1. ``reverse_relations`` is a ``dict`` keyed by virtual field name.
 2. Each :class:`~django_admin_reversefields.mixins.ReverseRelationConfig`
@@ -92,14 +91,14 @@ instance.
 
    def unbound_or_current(queryset, instance, request):
        if instance and instance.pk:
-           return queryset.filter(Q(service__isnull=True) | Q(service=instance))
-       return queryset.filter(service__isnull=True)
+           return queryset.filter(Q(company__isnull=True) | Q(company=instance))
+       return queryset.filter(company__isnull=True)
 
-   class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+   class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
        reverse_relations = {
-           "site_binding": ReverseRelationConfig(
-               model=Site,
-               fk_field="service",
+           "department_binding": ReverseRelationConfig(
+               model=Department,
+               fk_field="company",
                limit_choices_to=unbound_or_current,
            )
        }
@@ -122,40 +121,40 @@ instance.
 Enable bulk operations for performance
 --------------------------------------
 
-For large datasets where model signals aren't required, enable bulk mode to use 
+For large datasets where model signals aren't required, enable bulk mode to use
 Django's ``.update()`` method instead of individual saves:
 
 .. code-block:: python
 
-   class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+   class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
        reverse_relations = {
            # Single-select with bulk operations
-           "site_binding": ReverseRelationConfig(
-               model=Site,
-               fk_field="service",
+           "department_binding": ReverseRelationConfig(
+               model=Department,
+               fk_field="company",
                bulk=True,  # Use .update() for better performance
                limit_choices_to=unbound_or_current,
            ),
            # Multi-select with bulk operations
-           "assigned_extensions": ReverseRelationConfig(
-               model=Extension,
-               fk_field="service",
+           "assigned_projects": ReverseRelationConfig(
+               model=Project,
+               fk_field="company",
                multiple=True,
                bulk=True,  # Bulk operations for multiple selections
-               ordering=("number",),
+               ordering=("name",),
            )
        }
 
 .. warning::
 
    **When to use bulk mode:**
-   
+
    - ✅ Large datasets (hundreds/thousands of objects)
    - ✅ Performance is critical
    - ✅ No dependency on model signals (``pre_save``, ``post_save``, etc.)
-   
+
    **When NOT to use bulk mode:**
-   
+
    - ❌ Your models rely on ``pre_save`` or ``post_save`` signals
    - ❌ You need granular error handling per object
    - ❌ Small datasets where performance isn't a concern

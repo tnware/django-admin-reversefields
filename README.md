@@ -1,5 +1,8 @@
 # django-admin-reversefields
 
+[![PyPI - Downloads](https://img.shields.io/pypi/dw/django-admin-reversefields)](https://pypi.org/project/django-admin-reversefields/)
+[![PyPI - Version](https://img.shields.io/pypi/v/django-admin-reversefields)](https://pypi.org/project/django-admin-reversefields/)
+
 Manage reverse ForeignKey/OneToOne bindings directly from a parent model’s Django admin form using a small, declarative mixin.
 
 - Add virtual fields to your `ModelAdmin` to bind/unbind reverse-side rows
@@ -15,7 +18,7 @@ Manage reverse ForeignKey/OneToOne bindings directly from a parent model’s Dja
 pip install django-admin-reversefields
 ```
 
-Supported: Django 4.2/5.0/5.1; Python 3.10–3.13.
+Supported: Django 4.2/5.0/5.1/5.2; Python 3.10–3.13.
 
 ---
 
@@ -29,29 +32,38 @@ from django_admin_reversefields.mixins import (
     ReverseRelationAdminMixin,
     ReverseRelationConfig,
 )
+from .models import Company, Department, Project
 
 
-def only_unbound_or_current(qs, instance, request):
+def unbound_or_current(qs, instance, request):
     if instance and instance.pk:
-        return qs.filter(Q(service__isnull=True) | Q(service=instance))
-    return qs.filter(service__isnull=True)
+        return qs.filter(Q(company__isnull=True) | Q(company=instance))
+    return qs.filter(company__isnull=True)
 
 
-@admin.register(Service)
-class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+@admin.register(Company)
+class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
     reverse_relations = {
-        "site_binding": ReverseRelationConfig(
-            model=Site,
-            fk_field="service",
-            limit_choices_to=only_unbound_or_current,
-        )
+        # Single-select: bind exactly one Department via its FK to Company
+        "department_binding": ReverseRelationConfig(
+            model=Department,
+            fk_field="company",
+            limit_choices_to=unbound_or_current,
+        ),
+        # Multi-select: manage the entire set of Projects pointing at the Company
+        "assigned_projects": ReverseRelationConfig(
+            model=Project,
+            fk_field="company",
+            multiple=True,
+            # optional: ordering=("name",),
+        ),
     }
 
-    fieldsets = (("Binding", {"fields": ("site_binding",)}),)
+    fieldsets = (("Relations", {"fields": ("department_binding", "assigned_projects")}),)
 ```
 
-- Include the virtual field name (e.g. `"site_binding"`) in `fieldsets` so Django renders it.
-- Limiters run per request/object; use them to include unbound items plus the current binding.
+- Include each virtual field name (e.g. `"department_binding"`) in `fieldsets` or `fields` so the admin template renders it (or omit both `fields` and `fieldsets` and Django will render all fields, including the injected virtual fields).
+- Limiters run per request/object; commonly: “unbound or currently bound”.
 
 ---
 
@@ -63,6 +75,8 @@ class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
   - Single-select: sets the chosen row’s FK to the parent and unbinds any other rows pointing to it.
   - Multi-select: represents the entire desired set; rows not in the selection are unbound before binds.
 - Transactions: by default `reverse_relations_atomic=True` wraps all updates in one `transaction.atomic()` block and applies unbinds before binds to minimize uniqueness conflicts.
+
+Performance: enable `bulk=True` on a `ReverseRelationConfig` to use `.update()` for unbind/bind operations. This improves performance with large datasets but bypasses model signals. Use only if your app doesn’t depend on `pre_save`/`post_save` on the reverse model.
 
 Important: for single-select, unbinding others requires the reverse FK to be `null=True`, or set `required=True` on the virtual field when it must never be empty; otherwise an unbind can raise `IntegrityError`.
 
@@ -88,6 +102,8 @@ class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
   - "hide": remove the field entirely.
 - Optional: set `reverse_render_uses_field_policy=True` to have render-time visibility/disabled state decided by your per-field/global policy (called with `selection=None`).
 
+Hidden/disabled fields are always ignored on save, so crafted POSTs cannot change unauthorized reverse fields.
+
 ---
 
 ## API surface
@@ -111,6 +127,7 @@ from django_admin_reversefields.mixins import ReverseRelationAdminMixin, Reverse
 - `clean(instance, selection, request)`: optional domain validation; raise `forms.ValidationError` to block
 - `permission`: optional policy (callable or object with `has_perm(...)`) to allow/deny edits
 - `permission_denied_message`: message used when a denial becomes a field error
+- `bulk`: when True, perform unbind/bind via `.update()` (bypasses model signals)
 
 Mixin knobs:
 
@@ -126,11 +143,12 @@ Mixin knobs:
 ## Recipes and docs
 
 - [Quickstart](https://tnware.github.io/django-admin-reversefields/quickstart.html)
-- [Concepts](https://tnware.github.io/django-admin-reversefields/concepts.html)
+- [Core concepts](https://tnware.github.io/django-admin-reversefields/core-concepts.html)
 - [Permissions](https://tnware.github.io/django-admin-reversefields/permissions-guide.html)
 - [Architecture](https://tnware.github.io/django-admin-reversefields/architecture.html)
 - [Recipes](https://tnware.github.io/django-admin-reversefields/recipes.html)
 - [Caveats](https://tnware.github.io/django-admin-reversefields/caveats.html)
+- [Rendering & Visibility](https://tnware.github.io/django-admin-reversefields/rendering.html)
 
 ---
 

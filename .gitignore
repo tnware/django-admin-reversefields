@@ -74,3 +74,4 @@ target/
 .vagrant/
 .cursor/*
 .kiro/*
+docs/_autosummary/
