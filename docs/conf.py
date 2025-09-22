@@ -13,9 +13,9 @@
 # serve to show the default.
 
 import datetime
+from importlib.metadata import version as pkg_version
 import os
 import sys
-from importlib.metadata import version as pkg_version
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -158,26 +158,33 @@ html_theme_options = {
         },
                 {
             "title": "Examples",
-            "url": "writing",
+            "url": "recipes",
             "children": [
                 {
-                    "title": "Recipe 1",
-                    "url": "recipes",
-                    "summary": "description of recipe 1",
+                    "title": "Single Binding",
+                    "url": "recipes.html#single-binding-company-department",
+                    "summary": "Recipe for a single binding (Parent ↔ Child)",
                     "resource": True,
                 },
                 {
-                    "title": "Recipe 2",
-                    "url": "recipes",
-                    "summary": "description of recipe 2",
+                    "title": "Multiple Binding",
+                    "url": "recipes.html#multiple-binding-company-projects",
+                    "summary": "Recipe for a multiple binding (Parent ↔ Children)",
                     "resource": True,
                 },
                 {
-                    "title": "Recipe 3",
-                    "url": "recipes",
-                    "summary": "description of recipe 3",
+                    "title": "Validation Hooks",
+                    "url": "recipes.html#validation-hooks-business-rules",
+                    "summary": "Recipe for a validation hook (Business Rules)",
                     "resource": True,
                 },
+                {
+                    "title": "Permissions",
+                    "url": "recipes.html#permissions-on-reverse-fields",
+                    "summary": "Recipe for a permissions on reverse fields",
+                    "resource": True,
+                }
+
             ]
         },
         #         {

@@ -1,6 +1,12 @@
 Advanced
 ========
 
+Advanced configuration examples and third-party widget integrations.
+
+.. contents:: Page contents
+   :depth: 1
+   :local:
+
 .. seealso::
    The :ref:`recipe-ajax-widget` provides a complete, end-to-end recipe for
    integrating third-party AJAX widgets.
@@ -23,37 +29,37 @@ Widgets
       from django.contrib import admin
       from dal import autocomplete
       from django.db.models import Q
-      from myapp.models import MerakiNet, Site
+      from myapp.models import Company, Department
 
       from django_admin_reversefields.mixins import ReverseRelationAdminMixin, ReverseRelationConfig
 
 
-      def meraki_network_site_queryset(queryset, instance, request):
-          """Allow binding to sites that are unbound or already tied to ``instance``."""
+      def company_department_queryset(queryset, instance, request):
+          """Allow binding to departments that are unbound or already tied to ``instance``."""
           if instance and instance.pk:
-              return queryset.filter(Q(meraki__isnull=True) | Q(meraki=instance))
-          return queryset.filter(meraki__isnull=True)
+              return queryset.filter(Q(company__isnull=True) | Q(company=instance))
+          return queryset.filter(company__isnull=True)
 
 
-      class SiteAutocomplete(autocomplete.Select2QuerySetView):
+      class DepartmentAutocomplete(autocomplete.Select2QuerySetView):
           def get_queryset(self):
-              qs = Site.objects.all()
+              qs = Department.objects.all()
               term = (self.q or "").strip()
               if term:
-                  qs = qs.filter(displayName__icontains=term)
-              return qs.order_by("displayName")
+                  qs = qs.filter(name__icontains=term)
+              return qs.order_by("name")
 
 
-      @admin.register(MerakiNet)
-      class MerakiNetAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+      @admin.register(Company)
+      class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
           reverse_relations = {
-              "site_binding": ReverseRelationConfig(
-                  model=Site,
-                  fk_field="meraki",
+              "department_binding": ReverseRelationConfig(
+                  model=Department,
+                  fk_field="company",
                   widget=autocomplete.ModelSelect2(
-                      url="site-autocomplete", attrs={"data-minimum-input-length": 2}
+                      url="department-autocomplete", attrs={"data-minimum-input-length": 2}
                   ),
-                  limit_choices_to=meraki_network_site_queryset,
+                  limit_choices_to=company_department_queryset,
               )
           }
 
@@ -76,12 +82,12 @@ Widgets
 
             from unfold.widgets import UnfoldAdminSelectWidget
 
-            @admin.register(Service)
-            class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+            @admin.register(Company)
+            class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
                 reverse_relations = {
-                    "site_binding": ReverseRelationConfig(
-                        model=Site,
-                        fk_field="service",
+                    "department_binding": ReverseRelationConfig(
+                        model=Department,
+                        fk_field="company",
                         widget=UnfoldAdminSelectWidget(),
                     )
                 }
@@ -94,12 +100,12 @@ Widgets
 
             from unfold.widgets import UnfoldAdminSelect2Widget
 
-            @admin.register(Service)
-            class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+            @admin.register(Company)
+            class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
                 reverse_relations = {
-                    "site_binding": ReverseRelationConfig(
-                        model=Site,
-                        fk_field="service",
+                    "department_binding": ReverseRelationConfig(
+                        model=Department,
+                        fk_field="company",
                         widget=UnfoldAdminSelect2Widget(),
                     )
                 }

@@ -1,6 +1,10 @@
 Architecture
 ============
 
+.. contents:: Page contents
+   :depth: 1
+   :local:
+
 High-level components
 ---------------------
 
@@ -43,6 +47,9 @@ Form lifecycle
    per-field visibility. Fields become hidden or disabled based on
    ``reverse_permission_mode``.
 
+.. seealso::
+   The rendering flow and configuration options are detailed in :doc:`rendering`.
+
 Validation and permissions
 --------------------------
 
@@ -75,6 +82,13 @@ When ``reverse_relations_atomic`` is ``True`` (the default) all configured
 fields are synchronized inside a single transaction so either all :term:`bindings <Binding>` are
 updated or none are. Unbinds happen before binds within each field to minimise
 transient uniqueness conflicts on ``OneToOneField`` or ``unique`` ForeignKeys.
+
+.. note:: ``commit=False``
+
+   If a form is saved with ``commit=False``, the mixin defers reverse updates
+   until :meth:`~django.contrib.admin.options.ModelAdmin.save_model`. The
+   payload of authorized reverse fields is stored on the form instance and
+   applied during the admin save hook.
 
 Extensibility checklist
 -----------------------

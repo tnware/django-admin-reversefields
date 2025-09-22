@@ -1,10 +1,14 @@
 Recipes
 =======
 
+.. contents:: Page contents
+   :depth: 1
+   :local:
+
 .. _recipe-single-binding:
 
-Single binding (Service ↔ Site)
--------------------------------
+Single binding (Company ↔ Department)
+-------------------------------------
 
 .. code-block:: python
 
@@ -14,59 +18,63 @@ Single binding (Service ↔ Site)
 
    def unbound_or_current(queryset, instance, request):
        if instance and instance.pk:
-           return queryset.filter(Q(service__isnull=True) | Q(service=instance))
-       return queryset.filter(service__isnull=True)
+           return queryset.filter(Q(company__isnull=True) | Q(company=instance))
+       return queryset.filter(company__isnull=True)
 
-   @admin.register(Service)
-   class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+   @admin.register(Company)
+   class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
        reverse_relations = {
-           "site_binding": ReverseRelationConfig(
-               model=Site,
-               fk_field="service",
+           "department_binding": ReverseRelationConfig(
+               model=Department,
+               fk_field="company",
                limit_choices_to=unbound_or_current,
                # Add bulk=True for better performance with large datasets
                # bulk=True,  # Uncomment if you don't need model signals
            )
        }
-       fieldsets = (("Binding", {"fields": ("site_binding",)}),)
+       fieldsets = (("Departments", {"fields": ("department_binding",)}),)
 
 .. note:: Rendering Rules
 
    - If you declare ``fieldsets`` or ``fields``, include the virtual name
-     (e.g., ``"site_binding"``) so Django renders it.
+     (e.g., ``"department_binding"``) so Django renders it.
    - If neither is declared, Django renders all form fields and the injected
-     virtual fields appear automatically.
+     virtual fields appear automatically. The mixin appends the virtual names in
+     ``get_fields`` and injects their form fields in ``get_form``.
+   - If you override ``get_fields`` without calling ``super()``, or you return a
+     custom ``fields`` list that omits the virtual names, the admin template
+     will not render them (even though the form contains them).
 
 .. _recipe-multiple-binding:
 
-Multiple binding (Service ↔ Extensions)
----------------------------------------
+Multiple binding (Company ↔ Projects)
+-------------------------------------
 
 .. code-block:: python
 
    from django.db.models import Q
 
 
-   def available_extensions_queryset(queryset, instance, request):
+   def available_projects_queryset(queryset, instance, request):
        if instance and instance.pk:
-           return queryset.filter(Q(service__isnull=True) | Q(service=instance))
-       return queryset.filter(service__isnull=True)
+           return queryset.filter(Q(company__isnull=True) | Q(company=instance))
+       return queryset.filter(company__isnull=True)
 
 
-   @admin.register(Service)
-   class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+   @admin.register(Company)
+   class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
        reverse_relations = {
-           "assigned_extensions": ReverseRelationConfig(
-               model=Extension,
-               fk_field="service",
+           "assigned_projects": ReverseRelationConfig(
+               model=Project,
+               fk_field="company",
                multiple=True,
-               ordering=("number",),
-               limit_choices_to=available_extensions_queryset,
-               # Enable bulk operations for better performance with many extensions
+               ordering=("name",),
+               limit_choices_to=available_projects_queryset,
+               # Enable bulk operations for better performance with many projects
                # bulk=True,  # Uncomment if you don't need model signals
            )
        }
-       fieldsets = (("Binding", {"fields": ("assigned_extensions",)}),)
+       fieldsets = (("Projects", {"fields": ("assigned_projects",)}),)
        # Rendering rules are the same as the single-binding recipe.
        # Ensure all updates occur as a single unit (default True)
        reverse_relations_atomic = True
@@ -84,14 +92,14 @@ Forbid unbinding unless a condition is met:
 
    def forbid_unbind(instance, selection, request):
        if selection is None:
-           raise forms.ValidationError("Cannot unbind site right now")
+           raise forms.ValidationError("Cannot unbind department right now")
 
-   @admin.register(Service)
-   class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+   @admin.register(Company)
+   class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
        reverse_relations = {
-           "site_binding": ReverseRelationConfig(
-               model=Site,
-               fk_field="service",
+           "department_binding": ReverseRelationConfig(
+               model=Department,
+               fk_field="company",
                multiple=False,
                clean=forbid_unbind,
            )
@@ -112,14 +120,14 @@ Permissions on reverse fields
 
    .. code-block:: python
 
-      @admin.register(Service)
-      class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+      @admin.register(Company)
+      class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
           reverse_permissions_enabled = True
           reverse_permission_mode = "disable"  # or "hide"
           reverse_relations = {
-              "site_binding": ReverseRelationConfig(
-                  model=Site,
-                  fk_field="service",
+              "department_binding": ReverseRelationConfig(
+                  model=Department,
+                  fk_field="company",
                   multiple=False,
               )
           }
@@ -137,13 +145,13 @@ Permissions on reverse fields
               # delegate to some legacy checker
               return legacy_can_bind(request.user, selection)
 
-      @admin.register(Service)
-      class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+      @admin.register(Company)
+      class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
           reverse_permissions_enabled = True
           reverse_relations = {
-              "site_binding": ReverseRelationConfig(
-                  model=Site,
-                  fk_field="service",
+              "department_binding": ReverseRelationConfig(
+                  model=Department,
+                  fk_field="company",
                   multiple=False,
                   permission=CanBindAdapter(),
               )
@@ -153,7 +161,7 @@ Permissions on reverse fields
 
    .. code-block:: python
 
-      class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+      class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
           reverse_permissions_enabled = True
           def has_reverse_change_permission(self, request, obj, config, selection=None):
               # Example: object-level check (works with backends that support object perms)
@@ -169,7 +177,7 @@ Permissions on reverse fields
 
    .. code-block:: python
 
-      class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+      class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
           reverse_permissions_enabled = True
           def has_reverse_change_permission(self, request, obj, config, selection=None):
               app, model = config.model._meta.app_label, config.model._meta.model_name
@@ -183,13 +191,13 @@ Permissions on reverse fields
       def only_allow_special(request, obj, config, selection):
           return getattr(selection, "name", "") == "Special"
 
-      @admin.register(Service)
-      class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+      @admin.register(Company)
+      class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
           reverse_permissions_enabled = True
           reverse_relations = {
-              "site_binding": ReverseRelationConfig(
-                  model=Site,
-                  fk_field="service",
+              "department_binding": ReverseRelationConfig(
+                  model=Department,
+                  fk_field="company",
                   multiple=False,
                   permission=only_allow_special,
                   # Optional field override for the message; otherwise the policy
@@ -208,13 +216,13 @@ Permissions on reverse fields
           def __call__(self, request, obj, config, selection):
               return getattr(request.user, "is_staff", False)
 
-      @admin.register(Service)
-      class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+      @admin.register(Company)
+      class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
           reverse_permissions_enabled = True
           reverse_relations = {
-              "site_binding": ReverseRelationConfig(
-                  model=Site,
-                  fk_field="service",
+              "department_binding": ReverseRelationConfig(
+                  model=Department,
+                  fk_field="company",
                   multiple=False,
                   permission=StaffOnlyPolicy(),
               )
@@ -230,7 +238,7 @@ Permissions on reverse fields
           model = config.model._meta.model_name
           return request.user.has_perm(f"{app}.can_bind_{model}")
 
-      class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+      class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
           reverse_permissions_enabled = True
           reverse_permission_policy = staticmethod(can_bind)
 
@@ -242,7 +250,7 @@ Permissions on reverse fields
 
    .. code-block:: python
 
-      class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+      class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
           reverse_permissions_enabled = True
 
           def get_form(self, request, obj=None, **kwargs):
@@ -250,28 +258,28 @@ Permissions on reverse fields
               self.reverse_permission_policy = can_bind
               return super().get_form(request, obj, **kwargs)
 
-OneToOneField (Parent ↔ Child)
-------------------------------
+OneToOneField (Company ↔ CompanySettings)
+-----------------------------------------
 
 .. code-block:: python
 
    def only_unbound_or_current(qs, instance, request):
        if instance and instance.pk:
-           return qs.filter(Q(my_o2o__isnull=True) | Q(my_o2o=instance))
-       return qs.filter(my_o2o__isnull=True)
+           return qs.filter(Q(company__isnull=True) | Q(company=instance))
+       return qs.filter(company__isnull=True)
 
-   @admin.register(Parent)
-   class ParentAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+   @admin.register(Company)
+   class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
        reverse_relations = {
-           "child_binding": ReverseRelationConfig(
-               model=Child,
-               fk_field="my_o2o",
+           "settings_binding": ReverseRelationConfig(
+               model=CompanySettings,
+               fk_field="company",
                multiple=False,
                required=True,
                limit_choices_to=only_unbound_or_current,
            )
        }
-       fieldsets = (("Binding", {"fields": ("child_binding",)}),)
+       fieldsets = (("Settings", {"fields": ("settings_binding",)}),)
 
 Request-aware validation hook (use request.user)
 ------------------------------------------------
@@ -289,19 +297,19 @@ The ``clean`` hook receives the ``request`` so you can implement user-specific r
        if not getattr(request, "user", None) or not request.user.is_staff:
            raise forms.ValidationError("Not permitted")
 
-   @admin.register(Service)
-   class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+   @admin.register(Company)
+   class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
        reverse_relations = {
-           "site_binding": ReverseRelationConfig(
-               model=Site,
-               fk_field="service",
+           "department_binding": ReverseRelationConfig(
+               model=Department,
+               fk_field="company",
                multiple=False,
                required=False,
                clean=staff_only,  # gets (instance, selection, request)
            )
        }
 
-If the user is not staff, the form will include a field error on ``site_binding``
+If the user is not staff, the form will include a field error on ``department_binding``
 with the message "Not permitted" and the update will be blocked.
 
 .. _recipe-render-policy:
@@ -326,15 +334,15 @@ other context before any selection exists.
    def staff_only_policy(request, obj, config, selection):
        return getattr(request.user, "is_staff", False)
 
-   @admin.register(Service)
-   class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+   @admin.register(Company)
+   class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
        reverse_permissions_enabled = True
        reverse_permission_mode = "hide"  # or "disable"
        reverse_render_uses_field_policy = True
        reverse_relations = {
-           "site_binding": ReverseRelationConfig(
-               model=Site,
-               fk_field="service",
+           "department_binding": ReverseRelationConfig(
+               model=Department,
+               fk_field="company",
                multiple=False,
                permission=staff_only_policy,
            )
@@ -359,42 +367,42 @@ significant performance improvements but bypasses model signals.
    from django.db.models import Q
    from django_admin_reversefields.mixins import ReverseRelationAdminMixin, ReverseRelationConfig
 
-   def available_sites_queryset(queryset, instance, request):
+   def available_departments_queryset(queryset, instance, request):
        if instance and instance.pk:
-           return queryset.filter(Q(service__isnull=True) | Q(service=instance))
-       return queryset.filter(service__isnull=True)
+           return queryset.filter(Q(company__isnull=True) | Q(company=instance))
+       return queryset.filter(company__isnull=True)
 
-   @admin.register(Service)
-   class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+   @admin.register(Company)
+   class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
        reverse_relations = {
            # Single-select with bulk operations
-           "primary_site": ReverseRelationConfig(
-               model=Site,
-               fk_field="primary_service",
+           "primary_department": ReverseRelationConfig(
+               model=Department,
+               fk_field="company",
                bulk=True,  # Use bulk operations for performance
-               limit_choices_to=available_sites_queryset,
+               limit_choices_to=available_departments_queryset,
            ),
            # Multi-select with bulk operations - ideal for large datasets
-           "all_sites": ReverseRelationConfig(
-               model=Site,
-               fk_field="service",
+           "all_projects": ReverseRelationConfig(
+               model=Project,
+               fk_field="company",
                multiple=True,
                bulk=True,  # Bulk operations for multiple selections
                ordering=("name",),
-               limit_choices_to=available_sites_queryset,
+               limit_choices_to=available_departments_queryset,
            ),
            # Mixed configuration - some bulk, some individual
-           "critical_extensions": ReverseRelationConfig(
-               model=Extension,
-               fk_field="service",
+           "critical_departments": ReverseRelationConfig(
+               model=Department,
+               fk_field="company",
                multiple=True,
                bulk=False,  # Keep individual saves for signal processing
-               ordering=("priority", "name"),
+               ordering=("name",),
            )
        }
        fieldsets = (
-           ("Site Assignments", {"fields": ("primary_site", "all_sites")}),
-           ("Extensions", {"fields": ("critical_extensions",)}),
+           ("Department Assignments", {"fields": ("primary_department", "all_projects")}),
+           ("Critical Departments", {"fields": ("critical_departments",)}),
        )
 
 .. note:: **Performance Guidelines**
@@ -407,7 +415,7 @@ significant performance improvements but bypasses model signals.
 
    .. code-block:: python
 
-      # Example performance difference with 1000 Site objects:
+      # Example performance difference with 1000 Department objects:
       
       # Individual saves (bulk=False):
       # - 1000+ database queries (one per save)
@@ -421,12 +429,12 @@ significant performance improvements but bypasses model signals.
       
       # Use bulk mode for this scenario:
       reverse_relations = {
-          "site_assignments": ReverseRelationConfig(
-              model=Site,
-              fk_field="service", 
+          "department_assignments": ReverseRelationConfig(
+              model=Department,
+              fk_field="company", 
               multiple=True,
               bulk=True,  # 10-50x performance improvement
-              ordering=("region", "name"),
+              ordering=("name",),
           )
       }
 
@@ -467,15 +475,15 @@ Third-party widgets (AJAX search)
 
             # In forms.py or a dedicated file
             from dal import autocomplete
-            from .models import Site
+            from .models import Department
 
-            class SiteAutocomplete(autocomplete.Select2QuerySetView):
+            class DepartmentAutocomplete(autocomplete.Select2QuerySetView):
                 def get_queryset(self):
                     # Don't forget to filter out results based on user permissions
                     if not self.request.user.is_authenticated:
-                        return Site.objects.none()
+                        return Department.objects.none()
 
-                    qs = Site.objects.all()
+                    qs = Department.objects.all()
 
                     if self.q:
                         qs = qs.filter(name__icontains=self.q)
@@ -489,13 +497,13 @@ Third-party widgets (AJAX search)
          .. code-block:: python
 
             # In urls.py
-            from .forms import SiteAutocomplete
+            from .forms import DepartmentAutocomplete
 
             urlpatterns = [
                 path(
-                    "site-autocomplete/",
-                    SiteAutocomplete.as_view(),
-                    name="site-autocomplete",
+                    "department-autocomplete/",
+                    DepartmentAutocomplete.as_view(),
+                    name="department-autocomplete",
                 ),
             ]
 
@@ -508,17 +516,17 @@ Third-party widgets (AJAX search)
             # In admin.py
             from dal import autocomplete
 
-            @admin.register(Service)
-            class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+            @admin.register(Company)
+            class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
                 reverse_relations = {
-                    "site_binding": ReverseRelationConfig(
-                        model=Site,
-                        fk_field="service",
+                    "department_binding": ReverseRelationConfig(
+                        model=Department,
+                        fk_field="company",
                         # The widget is instantiated with the URL of the autocomplete view
-                        widget=autocomplete.ModelSelect2(url="site-autocomplete"),
+                        widget=autocomplete.ModelSelect2(url="department-autocomplete"),
                     )
                 }
-                fieldsets = (("Binding", {"fields": ("site_binding",)}),)
+                fieldsets = (("Departments", {"fields": ("department_binding",)}),)
 
                 class Media:
                     js = ("admin/js/jquery.init.js",)  # Ensure jQuery is loaded

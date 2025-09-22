@@ -1,37 +1,25 @@
 API
 ===
 
-.. autoclass:: django_admin_reversefields.mixins.ReverseRelationConfig
-   :members:
-   :show-inheritance:
-   :no-index:
+.. contents:: Page contents
+   :depth: 1
+   :local:
 
-   .. attribute:: bulk
-      :type: bool
-      :value: False
+.. currentmodule:: django_admin_reversefields.mixins
 
-      When ``True``, use Django's ``.update()`` method for bind/unbind operations 
-      instead of individual model saves. This provides better performance for large 
-      datasets but bypasses model signals (``pre_save``, ``post_save``, etc.).
+Overview
+--------
 
-      .. warning::
-         
-         Bulk operations bypass Django model signals. Only enable bulk mode when 
-         your application doesn't rely on ``pre_save``, ``post_save``, or other 
-         model signals for the reverse relationship model.
+.. autosummary::
+   :toctree: _autosummary
+   :nosignatures:
+   :template: autosummary/class_admin.rst
 
-      **Default:** ``False`` (maintains backward compatibility)
+   ReverseRelationAdminMixin
 
-      **Performance Trade-offs:**
-      
-      - **Advantages:** Reduced database round-trips, better performance with large datasets
-      - **Disadvantages:** No model signal processing, less granular error handling
+.. autosummary::
+   :toctree: _autosummary
+   :nosignatures:
 
-.. autoclass:: django_admin_reversefields.mixins.ReverseRelationAdminMixin
-   :members:
-   :show-inheritance:
-   :no-index:
-
-.. autoclass:: django_admin_reversefields.mixins.ReversePermissionPolicy
-   :members:
-   :no-index:
+   ReverseRelationConfig
+   ReversePermissionPolicy

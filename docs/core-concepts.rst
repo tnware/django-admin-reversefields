@@ -1,4 +1,4 @@
-Core concepts
+Core Concepts
 =============
 
 This chapter introduces the :term:`virtual fields <Virtual Field>` that
@@ -7,22 +7,41 @@ This chapter introduces the :term:`virtual fields <Virtual Field>` that
 multi-select :term:`bindings <Binding>` in sync. For complete admin examples, see
 :ref:`recipe-single-binding` and :ref:`recipe-multiple-binding`.
 
+.. contents:: Page contents
+   :depth: 1
+   :local:
+
 What the mixin injects
 ----------------------
 
 :class:`~django_admin_reversefields.mixins.ReverseRelationAdminMixin` introduces *virtual* form fields that proxy the
 reverse side of ForeignKey and OneToOne relationships. Those fields are declared
 in :attr:`~django_admin_reversefields.mixins.ReverseRelationAdminMixin.reverse_relations`.
-If your admin declares ``fieldsets`` or ``fields``,
-you must include the virtual names there so the Django template renders them.
-If your admin declares neither ``fieldsets`` nor ``fields``, Django renders all
-form fields by default and the injected :term:`virtual fields <Virtual Field>` will appear automatically.
+If your admin declares ``fieldsets`` or ``fields``, you must include the virtual
+names there so the Django template renders them. If your admin declares neither
+``fieldsets`` nor ``fields``, Django renders all form fields by default and the
+injected :term:`virtual fields <Virtual Field>` will appear automatically. This
+works because the mixin's :meth:`~django_admin_reversefields.mixins.ReverseRelationAdminMixin.get_fields`
+appends the virtual names for you and :meth:`~django_admin_reversefields.mixins.ReverseRelationAdminMixin.get_form`
+injects the corresponding form fields dynamically.
+
+.. note::
+
+   If you override :meth:`~django_admin_reversefields.mixins.ReverseRelationAdminMixin.get_fields`
+   without calling ``super()``, or you hard-code ``fields``/``fieldsets`` and
+   omit the virtual names, the admin template will not render the virtual
+   fields. The form still contains them (the mixin injects them), but the layout
+   derives from ``get_fields``/``fieldsets``.
+
 During :meth:`~django_admin_reversefields.mixins.ReverseRelationAdminMixin.get_form`
 the mixin removes those virtual names from the base form
 (avoiding "unknown field" errors), creates
 :class:`~django.forms.ModelChoiceField`/:class:`~django.forms.ModelMultipleChoiceField`
 instances on the fly, and wires up any labels, help texts, or widgets defined on
 :class:`~django_admin_reversefields.mixins.ReverseRelationConfig`.
+
+.. seealso::
+   For visibility/editability at render time and layout rules, see :doc:`rendering`.
 
 Request-aware querysets
 -----------------------

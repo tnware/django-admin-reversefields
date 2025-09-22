@@ -57,6 +57,9 @@ The default widgets mirror the Django admin look-and-feel. Override
 see the :doc:`advanced` gallery for end-to-end examples. For request-aware
 choice limiting, revisit :doc:`querysets-and-widgets`.
 
+For how fields are included in the form and when they are visible vs. disabled,
+see :doc:`rendering`.
+
 Permission interplay
 --------------------
 
@@ -64,11 +67,17 @@ Permission interplay
 
    When ``reverse_permissions_enabled=True`` the mixin requires the user to pass
    one of the configured :term:`policies <Policy>` before persisting changes.
-   Denied fields are ignored during save, so crafted POSTs cannot sidestep the
-   check. The render-time behaviour is controlled by
+   Denied fields are ignored during save (including hidden/disabled fields), so
+   crafted POSTs cannot sidestep the check. The render-time behaviour is controlled by
    :attr:`~django_admin_reversefields.mixins.ReverseRelationAdminMixin.reverse_permission_mode`
    (``"disable"`` or ``"hide"``). Refer back to :doc:`permissions-guide` for the
    evaluation flow and error-message precedence.
+
+   By default, the render gate consults only a base/global permission. To let
+   per-field/global policies influence visibility/editability, set
+   ``reverse_render_uses_field_policy=True`` on the admin.
+
+   See :doc:`rendering` for the end-to-end visibility and editability flow.
 
 One-to-one specifics
 --------------------

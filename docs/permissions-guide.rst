@@ -5,6 +5,10 @@ Use this guide to enforce Django permissions on reverse relations and craft
 custom :term:`policies <Policy>` beyond the default ``change`` checks. Ready-to-run snippets live
 in :ref:`recipe-permissions`.
 
+.. contents:: Page contents
+   :depth: 1
+   :local:
+
 Permission modes
 ----------------
 
@@ -38,13 +42,13 @@ must therefore handle ``selection=None`` sensibly.
 
 Example::
 
-   class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+   class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
        reverse_permissions_enabled = True
        reverse_render_uses_field_policy = True
        reverse_relations = {
-           "site_binding": ReverseRelationConfig(
-               model=Site,
-               fk_field="service",
+           "department_binding": ReverseRelationConfig(
+               model=Department,
+               fk_field="company",
                multiple=False,
                permission=lambda request, obj, config, selection: getattr(request.user, "is_staff", False),
            )
@@ -95,9 +99,13 @@ Permission checks run at three points:
    per-field or global :term:`policy <Policy>` (with ``selection=None``).
 2. **Validation gate** — once a selection exists, the per-field :term:`policy <Policy>` runs (if
    defined) and otherwise the global :term:`policy <Policy>` is invoked. Denials raise a field
-   error using the precedence below.
+   error using the precedence below. If no custom policy is configured at all
+   (neither per-field nor global), the mixin does not attach validation errors
+   for base permission denials; instead, the UI gating (``hide``/``disable``)
+   applies, and hidden/disabled inputs are ignored on save.
 3. **Persistence gate** — as a safety net, the mixin excludes unauthorized
    fields from the update payload so crafted POSTs cannot persist changes.
+   This includes hidden and disabled reverse fields.
 
 Error message precedence
 ------------------------
@@ -203,3 +211,8 @@ Minimal examples
                  return legacy_can_bind(request.user, selection)
 
          ReverseRelationConfig(..., permission=CanBindAdapter())
+
+.. seealso::
+   - :doc:`rendering` — Visibility vs editability and the render gate.
+   - :doc:`recipes` — End-to-end permission setups in context.
+   - :doc:`core-concepts` — Where permissions fit in the lifecycle.

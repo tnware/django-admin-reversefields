@@ -40,6 +40,7 @@ Contents
    :maxdepth: 1
 
    data-integrity
+   rendering
    querysets-and-widgets
    permissions-guide
    advanced

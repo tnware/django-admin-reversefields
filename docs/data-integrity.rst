@@ -1,5 +1,9 @@
-Data integrity & transactions
+Data Integrity & Transactions
 =============================
+
+.. contents:: Page contents
+   :depth: 1
+   :local:
 
 This guide explains how reverse :term:`bindings <Binding>` are persisted, what the default
 transaction guarantees look like, and how to treat reverse ``OneToOneField``
@@ -33,3 +37,8 @@ One-to-one specifics
    If the reverse relation is non-nullable, you must configure ``required=True``
    or make the underlying database field nullable. Otherwise, :term:`unbinding <Unbinding>` an object
    would raise an ``IntegrityError``.
+
+.. seealso::
+   - :doc:`recipes` — End-to-end single and multiple binding examples.
+   - :doc:`core-concepts` — Lifecycle summary and transaction overview.
+   - :doc:`caveats` — Edge cases and operational considerations.
