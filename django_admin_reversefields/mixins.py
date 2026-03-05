@@ -898,7 +898,6 @@ class ReverseRelationAdminMixin:
 
         Raises:
             forms.ValidationError: If database constraints prevent the unbind operation.
-            Exception: Any other database error during the bulk update.
         """
         try:
             # Build queryset for objects currently bound to this instance
@@ -930,7 +929,6 @@ class ReverseRelationAdminMixin:
 
         Raises:
             forms.ValidationError: If database constraints prevent the bind operation.
-            Exception: Any other database error during the bulk update.
         """
         if not target_objects:
             return
@@ -969,8 +967,7 @@ class ReverseRelationAdminMixin:
                       iterable of objects for multi-select).
 
         Raises:
-            forms.ValidationError: If database constraints prevent the operations
-                                 or other errors occur during bulk updates.
+            forms.ValidationError: If database constraints prevent the operations.
         """
         if config.multiple:
             # Multi-select scenario
