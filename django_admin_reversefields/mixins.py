@@ -50,6 +50,7 @@ from typing import Any, Protocol
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
 from django.db import models, transaction
 from django.http import HttpRequest
 
@@ -475,6 +476,41 @@ class ReverseRelationAdminMixin:
         """
         return self.reverse_relations
 
+    def _validate_reverse_relation_configs(self) -> None:
+        """Validate reverse relation configuration before form construction.
+
+        Raises:
+            ImproperlyConfigured: If a reverse relation has an invalid ``fk_field``
+                (missing, wrong type, or targeting a different parent model).
+        """
+        for field_name, config in self.get_reverse_relations().items():
+            try:
+                fk = config.model._meta.get_field(config.fk_field)
+            except FieldDoesNotExist as exc:
+                raise ImproperlyConfigured(
+                    f"Invalid reverse_relations['{field_name}']: fk_field "
+                    f"'{config.fk_field}' does not exist on model '{config.model._meta.label}'."
+                ) from exc
+
+            if not isinstance(fk, (models.ForeignKey, models.OneToOneField)):
+                raise ImproperlyConfigured(
+                    f"Invalid reverse_relations['{field_name}']: fk_field "
+                    f"'{config.fk_field}' on model '{config.model._meta.label}' must be "
+                    "a ForeignKey or OneToOneField."
+                )
+
+            target_model = fk.remote_field.model
+            admin_model = self.model
+            if not (
+                issubclass(admin_model, target_model) or issubclass(target_model, admin_model)
+            ):
+                raise ImproperlyConfigured(
+                    f"Invalid reverse_relations['{field_name}']: fk_field "
+                    f"'{config.fk_field}' on model '{config.model._meta.label}' points to "
+                    f"'{target_model._meta.label}', but this admin manages "
+                    f"'{admin_model._meta.label}'."
+                )
+
     def get_fields(self, request, obj=None):  # type: ignore[override]
         """Ensure virtual reverse field names are part of the rendered fields.
 
@@ -514,6 +550,8 @@ class ReverseRelationAdminMixin:
             the configured reverse relation fields.
         """
         relations = dict(self.get_reverse_relations())
+        if relations:
+            self._validate_reverse_relation_configs()
         if relations:
             provided_fields = kwargs.get("fields")
             if provided_fields:
