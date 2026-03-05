@@ -58,9 +58,8 @@ mixin and declaring at least one reverse relation:
 
 .. literalinclude:: ../tests/admin.py
    :language: python
-   :lines: 16-46
-   :caption: Minimal admin exposing two reverse bindings
-   :emphasize-lines: 13-31
+   :lines: 17-91
+   :caption: Minimal admin exposing reverse bindings with qualifying filters
 
 1. ``reverse_relations`` is a ``dict`` keyed by virtual field name.
 2. Each :class:`~django_admin_reversefields.mixins.ReverseRelationConfig`
@@ -90,6 +89,7 @@ instance.
    from django.db.models import Q
 
    def unbound_or_current(queryset, instance, request):
+       """Offer unassigned rows plus rows already bound to this company."""
        if instance and instance.pk:
            return queryset.filter(Q(company__isnull=True) | Q(company=instance))
        return queryset.filter(company__isnull=True)
@@ -100,6 +100,10 @@ instance.
                model=Department,
                fk_field="company",
                limit_choices_to=unbound_or_current,
+               help_text=(
+                   "Choices are limited to departments that are unassigned or "
+                   "already assigned to this company."
+               ),
            )
        }
 
@@ -108,6 +112,9 @@ instance.
    - ``limit_choices_to`` accepts either a callable ``(queryset, instance,
      request) -> queryset`` or a ``dict`` that is passed to
      :meth:`~django.db.models.query.QuerySet.filter`.
+   - Add short docstrings to limiter helpers and pair them with
+     ``help_text`` on the virtual field so users understand why some rows are
+     not selectable.
    - ``multiple=True`` switches a field to a
      :class:`~django.forms.ModelMultipleChoiceField` and synchronises the entire
      set on save.

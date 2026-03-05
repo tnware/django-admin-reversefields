@@ -4,6 +4,7 @@ Admin configurations following quickstart documentation patterns.
 
 # Required imports from quickstart guide
 from django.contrib import admin
+from django.db.models import Q
 
 from django_admin_reversefields.mixins import (
     ReverseRelationAdminMixin,
@@ -11,6 +12,40 @@ from django_admin_reversefields.mixins import (
 )
 
 from .models import Assignment, Company, CompanySettings, Department, Employee, Project
+
+
+def unbound_or_current_company(queryset, instance, _request):
+    """Return company-scoped choices for reverse FK bindings.
+
+    Args:
+        queryset: Base queryset for reverse-side objects.
+        instance: Company currently edited in the admin form.
+        _request: Active admin request (unused).
+
+    Returns:
+        Filtered queryset containing objects that are either unbound or already
+        bound to the current company.
+    """
+    if instance and instance.pk:
+        return queryset.filter(Q(company__isnull=True) | Q(company=instance))
+    return queryset.filter(company__isnull=True)
+
+
+def unbound_or_current_department(queryset, instance, _request):
+    """Return department-scoped choices for reverse FK bindings.
+
+    Args:
+        queryset: Base queryset for reverse-side objects.
+        instance: Department currently edited in the admin form.
+        _request: Active admin request (unused).
+
+    Returns:
+        Filtered queryset containing objects that are either unbound or already
+        bound to the current department.
+    """
+    if instance and instance.pk:
+        return queryset.filter(Q(department__isnull=True) | Q(department=instance))
+    return queryset.filter(department__isnull=True)
 
 
 @admin.register(Company)
@@ -31,12 +66,22 @@ class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
             model=Department,
             fk_field="company",
             multiple=True,
+            limit_choices_to=unbound_or_current_company,
+            help_text=(
+                "Choices are limited to departments that are unassigned or already "
+                "assigned to this company."
+            ),
         ),
         # Multi-select: manage which projects belong to this company
         "projects": ReverseRelationConfig(
             model=Project,
             fk_field="company",
             multiple=True,
+            limit_choices_to=unbound_or_current_company,
+            help_text=(
+                "Choices are limited to projects that are unassigned or already "
+                "assigned to this company."
+            ),
         ),
         # Single-select: bind one CompanySettings instance (OneToOne)
         "settings": ReverseRelationConfig(
@@ -69,6 +114,11 @@ class DepartmentAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
             model=Employee,
             fk_field="department",
             multiple=True,
+            limit_choices_to=unbound_or_current_department,
+            help_text=(
+                "Choices are limited to employees who are unassigned or already "
+                "assigned to this department."
+            ),
         ),
     }
 

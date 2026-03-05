@@ -17,6 +17,7 @@ Single binding (Company ↔ Department)
    from django_admin_reversefields.mixins import ReverseRelationAdminMixin, ReverseRelationConfig
 
    def unbound_or_current(queryset, instance, request):
+       """Offer unassigned rows plus rows already bound to this company."""
        if instance and instance.pk:
            return queryset.filter(Q(company__isnull=True) | Q(company=instance))
        return queryset.filter(company__isnull=True)
@@ -28,6 +29,10 @@ Single binding (Company ↔ Department)
                model=Department,
                fk_field="company",
                limit_choices_to=unbound_or_current,
+               help_text=(
+                   "Choices are limited to departments that are unassigned or "
+                   "already assigned to this company."
+               ),
                # Add bulk=True for better performance with large datasets
                # bulk=True,  # Uncomment if you don't need model signals
            )

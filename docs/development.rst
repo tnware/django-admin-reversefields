@@ -56,9 +56,15 @@ test binding and unbinding. It is idempotent and skips if data already exists.
 
 The test models registered in the admin include:
 
-- **Company** — single-select ``departments`` and multi-select ``projects``
-  virtual fields
-- **Department** — single-select ``employees`` virtual field
+- **Company** — multi-select ``departments`` and ``projects`` virtual fields,
+  plus single-select ``settings``
+- **Department** — multi-select ``employees`` virtual field
+
+The interactive admin examples use an ``unbound_or_current`` queryset pattern
+for reverse fields so users can choose objects that are either unassigned or
+already assigned to the object being edited.
+Those reverse fields also include ``help_text`` in the admin UI to explain why
+some options are intentionally filtered out.
 
 Edit a company to see the mixin in action. The ``db.sqlite3`` file is
 git-ignored.
