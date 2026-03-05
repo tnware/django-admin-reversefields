@@ -2,18 +2,70 @@
 
 # Test imports
 from django.contrib import admin
+from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 
 from django_admin_reversefields.mixins import (
     ReverseRelationAdminMixin,
     ReverseRelationConfig,
 )
-from tests.models import Company, CompanySettings, Department, Project
+from tests.models import Company, CompanySettings, Department, Employee, Project
 from tests.shared_test_base import BaseAdminMixinTestCase
 
 
 class EdgeCasesTests(BaseAdminMixinTestCase):
     """Test suite for edge cases and non-parameterizable scenarios."""
+
+    def test_invalid_fk_field_name_fails_early(self):
+        """Misconfigured fk_field names should fail during form construction."""
+
+        class TestAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+            reverse_relations = {
+                "bad_binding": ReverseRelationConfig(
+                    model=Department,
+                    fk_field="does_not_exist",
+                ),
+            }
+
+        admin_inst = TestAdmin(Company, self.site)
+        request = self.factory.get("/")
+
+        with self.assertRaisesMessage(ImproperlyConfigured, "does not exist on model"):
+            admin_inst.get_form(request, self.company)
+
+    def test_non_relational_fk_field_fails_early(self):
+        """fk_field must reference a ForeignKey or OneToOneField."""
+
+        class TestAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+            reverse_relations = {
+                "bad_binding": ReverseRelationConfig(
+                    model=Department,
+                    fk_field="name",  # CharField, not a relation
+                ),
+            }
+
+        admin_inst = TestAdmin(Company, self.site)
+        request = self.factory.get("/")
+
+        with self.assertRaisesMessage(ImproperlyConfigured, "must be a ForeignKey or OneToOneField"):
+            admin_inst.get_form(request, self.company)
+
+    def test_fk_field_target_model_mismatch_fails_early(self):
+        """fk_field target model must match the admin's parent model."""
+
+        class TestAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+            reverse_relations = {
+                "bad_binding": ReverseRelationConfig(
+                    model=Employee,
+                    fk_field="department",  # Points to Department, not Company
+                ),
+            }
+
+        admin_inst = TestAdmin(Company, self.site)
+        request = self.factory.get("/")
+
+        with self.assertRaisesMessage(ImproperlyConfigured, "but this admin manages"):
+            admin_inst.get_form(request, self.company)
 
     def test_large_dataset_performance(self):
         """Test base operations with large datasets."""
