@@ -425,3 +425,42 @@ class ParameterizedBindingTests(BaseAdminMixinTestCase):
                 dept_a.refresh_from_db()
                 self.assertEqual(project_a.company, saved_company)
                 self.assertEqual(dept_a.company, saved_company)
+
+    def test_commit_false_defers_reverse_updates_until_save_model_both_modes(self):
+        """Reverse updates should be deferred on commit=False and applied in save_model."""
+        for bulk_enabled in [False, True]:
+            with self.subTest(bulk_enabled=bulk_enabled):
+                project = Project.objects.create(name=f"Deferred Project {bulk_enabled}")
+                department = Department.objects.create(name=f"Deferred Department {bulk_enabled}")
+
+                admin_instance = create_parameterized_admin(bulk_enabled=bulk_enabled)
+                request = self.factory.post("/")
+                form_cls = admin_instance.get_form(request, self.company)
+                form = form_cls(
+                    {
+                        "name": self.company.name,
+                        "department_binding": department.pk,
+                        "assigned_projects": [project.pk],
+                    },
+                    instance=self.company,
+                )
+
+                self.assertTrue(form.is_valid())
+
+                obj = form.save(commit=False)
+
+                # Reverse relations should not be applied yet.
+                project.refresh_from_db()
+                department.refresh_from_db()
+                self.assertIsNone(project.company)
+                self.assertIsNone(department.company)
+                self.assertIsNotNone(form._reverse_relation_data)
+
+                admin_instance.save_model(request, obj, form, change=True)
+
+                # Deferred payload should now be applied.
+                project.refresh_from_db()
+                department.refresh_from_db()
+                self.assertEqual(project.company, obj)
+                self.assertEqual(department.company, obj)
+                self.assertIsNone(form._reverse_relation_data)
