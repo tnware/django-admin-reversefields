@@ -31,3 +31,29 @@ Glossary
       A callable or object that implements permission checks for a virtual field. It
       determines whether a user has the authority to view, edit, or make specific
       selections. The evaluation flow is detailed in :doc:`configuration`.
+
+   Render Gate
+      The first of three permission checkpoints. Runs during form ``__init__``
+      (before templates render) to decide whether a :term:`virtual field <Virtual Field>` is
+      visible, disabled, or hidden. By default it consults a base permission;
+      enable ``reverse_render_uses_field_policy`` to use per-field
+      :term:`policies <Policy>`. See :ref:`configuration-permissions`.
+
+   Validation Gate
+      The second permission checkpoint. Runs during form ``clean()`` once a
+      selection exists. If a custom :term:`policy <Policy>` denies the selection,
+      a field error is attached. See :ref:`configuration-permissions`.
+
+   Persistence Gate
+      The third and final permission checkpoint. Runs during form ``save()`` to
+      filter the update payload so that unauthorized :term:`virtual fields <Virtual Field>`
+      are excluded — even if a crafted POST included them. See
+      :ref:`configuration-permissions`.
+
+   Bulk Mode
+      An optional per-field setting (``bulk=True`` on
+      :class:`~django_admin_reversefields.mixins.ReverseRelationConfig`) that
+      uses Django's ``.update()`` for :term:`binding <Binding>` and
+      :term:`unbinding <Unbinding>` instead of individual model saves. Faster
+      for large datasets but bypasses model signals (``pre_save``,
+      ``post_save``). See :ref:`concepts-data-integrity`.
