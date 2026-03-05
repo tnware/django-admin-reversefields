@@ -1,3 +1,5 @@
+import os
+
 SECRET_KEY = "test-secret-key"
 DEBUG = True
 USE_TZ = True
@@ -5,7 +7,7 @@ USE_TZ = True
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": ":memory:",
+        "NAME": os.environ.get("DJANGO_DB_NAME", ":memory:"),
     }
 }
 

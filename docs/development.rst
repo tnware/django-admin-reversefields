@@ -31,10 +31,42 @@ Run tests
 
    uv run python manage.py test -v 2
 
+Interactive dev server
+----------------------
+
+The ``tests/`` app doubles as a runnable Django instance with realistic models
+and admin configs that use the mixin. This is useful for manual smoke-testing
+and visual inspection of widgets, permissions, and field rendering.
+
+.. code-block:: bash
+
+   # Use a file-backed database (tests default to :memory:)
+   export DJANGO_DB_NAME=db.sqlite3   # Linux/macOS
+   # $env:DJANGO_DB_NAME="db.sqlite3"  # Windows PowerShell
+
+   uv run python manage.py migrate
+   uv run python manage.py seed      # creates sample data + admin/admin superuser
+   uv run python manage.py runserver
+
+Visit ``http://localhost:8000/admin/`` and log in with ``admin`` / ``admin``.
+
+The ``seed`` command creates companies, departments, projects, employees, and
+company settings — a mix of bound and unbound objects so you can immediately
+test binding and unbinding. It is idempotent and skips if data already exists.
+
+The test models registered in the admin include:
+
+- **Company** — single-select ``departments`` and multi-select ``projects``
+  virtual fields
+- **Department** — single-select ``employees`` virtual field
+
+Edit a company to see the mixin in action. The ``db.sqlite3`` file is
+git-ignored.
+
 Release
 -------
 
-Version is defined in ``django_admin_reversefields/__init__.py``.
+Version is defined in ``pyproject.toml``.
 
 .. code-block:: bash
 

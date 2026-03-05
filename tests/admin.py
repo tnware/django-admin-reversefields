@@ -26,23 +26,31 @@ class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
 
     # Step 1: Declare reverse_relations dict keyed by virtual field name
     reverse_relations = {
-        # Single department selection - following minimal example pattern
+        # Multi-select: manage which departments belong to this company
         "departments": ReverseRelationConfig(
             model=Department,
             fk_field="company",
+            multiple=True,
         ),
-        # Multiple projects - using multiple=True from configuration highlights
+        # Multi-select: manage which projects belong to this company
         "projects": ReverseRelationConfig(
             model=Project,
             fk_field="company",
             multiple=True,
+        ),
+        # Single-select: bind one CompanySettings instance (OneToOne)
+        "settings": ReverseRelationConfig(
+            model=CompanySettings,
+            fk_field="company",
+            multiple=False,
         ),
     }
 
     # Step 2: Include virtual field names in fieldsets as instructed
     fieldsets = (
         ("Company Information", {"fields": ("name", "founded_year")}),
-        ("Related Items", {"fields": ("departments", "projects")}),
+        ("Departments & Projects", {"fields": ("departments", "projects")}),
+        ("Settings", {"fields": ("settings",)}),
     )
 
 
@@ -56,10 +64,11 @@ class DepartmentAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
 
     # Following the same pattern: dict keyed by virtual field name
     reverse_relations = {
-        # Single employee selection for department head
+        # Multi-select: manage all employees assigned to this department
         "employees": ReverseRelationConfig(
             model=Employee,
             fk_field="department",
+            multiple=True,
         ),
     }
 
