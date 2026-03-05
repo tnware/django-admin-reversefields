@@ -459,14 +459,14 @@ significant performance improvements but bypasses model signals.
 Third-party widgets (AJAX search)
 ---------------------------------
 
-.. dropdown:: End-to-end DAL integration
+.. dropdown:: DAL integration pattern
    :open:
 
    .. seealso::
       See :doc:`advanced` for more details on widget customisation.
 
    You can use any compatible third-party widget, which is especially useful for
-   fields with many choices. The example below shows a conceptual integration with
+   fields with many choices. The example below shows one integration pattern with
    `django-autocomplete-light <https://django-autocomplete-light.readthedocs.io/>`_
    to provide an AJAX-powered search widget.
 

@@ -129,8 +129,10 @@ class; the mixin then wires dynamic form fields, validation, permissions, and
 persistence logic around Django's normal flow.
 
 1. **Field declaration** — the admin declares :term:`virtual field <Virtual Field>` names in
-   ``reverse_relations`` and lists them in ``fieldsets`` so the Django admin
-   template renders them.
+   ``reverse_relations`` and typically lists them in ``fieldsets`` or ``fields``
+   so the Django admin template renders them. When neither layout option is
+   declared, :meth:`~django_admin_reversefields.mixins.ReverseRelationAdminMixin.get_fields`
+   appends virtual names automatically.
 2. **Form construction** — :meth:`~django_admin_reversefields.mixins.ReverseRelationAdminMixin.get_form`
    strips the virtual names out of the base ``fields`` argument (to avoid
    Django's "unknown field" errors) and delegates to ``super()``. After the base
@@ -189,6 +191,21 @@ transient uniqueness conflicts on ``OneToOneField`` or ``unique`` ForeignKeys.
    until :meth:`~django.contrib.admin.options.ModelAdmin.save_model`. The
    payload of authorized reverse fields is stored on the form instance and
    applied during the admin save hook.
+
+   Typical use-cases
+      - You override admin save hooks and need to inspect or adjust the parent
+        instance before reverse bindings are persisted.
+      - You rely on the standard Django admin lifecycle where
+        ``ModelAdmin.save_model`` coordinates the final write.
+
+   Behavioral details
+      1. ``form.save(commit=False)`` returns the parent instance without
+         applying reverse bind/unbind updates yet.
+      2. The mixin stores only authorized reverse-field selections on the form.
+      3. :meth:`~django.contrib.admin.options.ModelAdmin.save_model` applies the
+         deferred payload exactly once.
+      4. Hidden/disabled/unauthorized fields remain excluded from persistence,
+         consistent with normal ``commit=True`` behavior.
 
 .. _concepts-data-integrity:
 
