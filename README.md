@@ -1,167 +1,135 @@
 # django-admin-reversefields
 
-[![PyPI - Downloads](https://img.shields.io/pypi/dw/django-admin-reversefields)](https://pypi.org/project/django-admin-reversefields/)
-[![PyPI - Version](https://img.shields.io/pypi/v/django-admin-reversefields)](https://pypi.org/project/django-admin-reversefields/)
+<p align="left">
+  <a href="https://pypi.org/project/django-admin-reversefields/">
+    <img alt="PyPI version" src="https://img.shields.io/pypi/v/django-admin-reversefields">
+  </a>
+  <a href="https://pypi.org/project/django-admin-reversefields/">
+    <img alt="PyPI downloads" src="https://img.shields.io/pypi/dw/django-admin-reversefields">
+  </a>
+  <img alt="Python versions" src="https://img.shields.io/pypi/pyversions/django-admin-reversefields">
+  <img alt="Django versions" src="https://img.shields.io/badge/Django-4.2%20%7C%205.0%20%7C%205.1%20%7C%205.2-0C4B33">
+  <a href="https://tnware.github.io/django-admin-reversefields/">
+    <img alt="Docs" src="https://img.shields.io/badge/docs-online-blue">
+  </a>
+</p>
 
-Manage reverse ForeignKey/OneToOne bindings directly from a parent model’s Django admin form using a small, declarative mixin.
+Manage reverse `ForeignKey` / `OneToOne` relationships from the **parent** change form in Django admin.
 
-- Add virtual fields to your `ModelAdmin` to bind/unbind reverse-side rows
-- Keep selections in sync with transactional, unbind-before-bind updates
-- Use stock admin widgets or plug in Unfold/DAL/custom widgets
-- Optional, flexible permission gating with clear UX (hide/disable)
+`django-admin-reversefields` adds **parent-side selector fields** (single or multi-select) that stay in sync with the child rows on save — without hand-rolling custom forms, querysets, or save logic.
+
+<p align="left">
+  <a href="https://tnware.github.io/django-admin-reversefields/quickstart.html">Quickstart</a>
+  ·
+  <a href="https://tnware.github.io/django-admin-reversefields/recipes.html">Recipes</a>
+  ·
+  <a href="https://tnware.github.io/django-admin-reversefields/caveats.html">Caveats</a>
+</p>
+
+---
+
+## Why
+
+Django admin gives you **inlines** for reverse relations. They’re great for creating or editing related rows, but they don’t give you a simple selector to attach **existing** child objects to a parent from the parent form.
+
+When you implement this yourself, you usually repeat the same plumbing:
+
+- form field + widget wiring
+- queryset filtering
+- initial value population
+- unbind / bind save logic
+- transaction handling
+
+This package turns that pattern into a reusable mixin + config.
+
+---
+
+## What it does
+
+You have a parent model (Organization / Company / Tenant) and a child model (Site / Department / Project) where the child has a `ForeignKey` to the parent.
+
+This package adds **virtual fields** to the parent admin form so you can select which existing child rows belong to the parent. On save, it synchronizes the child rows’ foreign keys to match the selection.
+
+Supports:
+
+- single-select or multi-select
+- choice filtering (example: “unassigned or already assigned to this parent”)
+- transactional synchronization on save
 
 ---
 
 ## Install
 
-```bash
-pip install django-admin-reversefields
-```
+    pip install django-admin-reversefields
 
-Supported: Django 4.2/5.0/5.1/5.2; Python 3.10–3.13.
+Supported versions:
+
+- Django: 4.2, 5.0, 5.1, 5.2
+- Python: 3.10–3.13
 
 ---
 
 ## Quickstart
 
+Example: assign `Site` rows to an `Organization` from the `Organization` admin page.
+
 ```python
 from django.contrib import admin
-from django.db.models import Q
+from django_admin_reversefields.mixins import ReverseRelationAdminMixin, ReverseRelationConfig
 
-from django_admin_reversefields.mixins import (
-    ReverseRelationAdminMixin,
-    ReverseRelationConfig,
-)
-from .models import Company, Department, Project
-
-
-def unbound_or_current(qs, instance, request):
-    if instance and instance.pk:
-        return qs.filter(Q(company__isnull=True) | Q(company=instance))
-    return qs.filter(company__isnull=True)
-
-
-@admin.register(Company)
-class CompanyAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+@admin.register(Organization)
+class OrganizationAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
     reverse_relations = {
-        # Single-select: bind exactly one Department via its FK to Company
-        "department_binding": ReverseRelationConfig(
-            model=Department,
-            fk_field="company",
-            limit_choices_to=unbound_or_current,
-        ),
-        # Multi-select: manage the entire set of Projects pointing at the Company
-        "assigned_projects": ReverseRelationConfig(
-            model=Project,
-            fk_field="company",
+        "sites": ReverseRelationConfig(
+            model=Site,
+            fk_field="organization",
             multiple=True,
-            # optional: ordering=("name",),
+            limit_choices_to=unbound_or_current,  # optional
         ),
     }
 
-    fieldsets = (("Relations", {"fields": ("department_binding", "assigned_projects")}),)
+    fieldsets = (
+        ("Details", {"fields": ("name",)}),
+        ("Sites", {"fields": ("sites",)}),
+    )
 ```
 
-- Include each virtual field name (e.g. `"department_binding"`) in `fieldsets` or `fields` so the admin template renders it (or omit both `fields` and `fieldsets` and Django will render all fields, including the injected virtual fields).
-- Limiters run per request/object; commonly: “unbound or currently bound”.
-
----
-
-## Core concepts (tl;dr)
-
-- Reverse fields are virtual `ModelChoiceField` / `ModelMultipleChoiceField` instances that point to the reverse-side model and its ForeignKey back to the admin’s model.
-- Querysets and initial values are computed per request/object.
-- On save, the mixin synchronizes the reverse-side ForeignKey(s) to match the submitted selection.
-  - Single-select: sets the chosen row’s FK to the parent and unbinds any other rows pointing to it.
-  - Multi-select: represents the entire desired set; rows not in the selection are unbound before binds.
-- Transactions: by default `reverse_relations_atomic=True` wraps all updates in one `transaction.atomic()` block and applies unbinds before binds to minimize uniqueness conflicts.
-
-Performance: enable `bulk=True` on a `ReverseRelationConfig` to use `.update()` for unbind/bind operations. This improves performance with large datasets but bypasses model signals. Use only if your app doesn’t depend on `pre_save`/`post_save` on the reverse model.
-
-Important: for single-select, unbinding others requires the reverse FK to be `null=True`, or set `required=True` on the virtual field when it must never be empty; otherwise an unbind can raise `IntegrityError`.
-
----
-
-## Permissions (optional)
-
-Enable enforcement:
-
-```python
-class ServiceAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
-    reverse_permissions_enabled = True
-    reverse_permission_mode = "disable"  # or "hide"
-```
-
-- Precedence for allow/deny:
-  1) Per-field `ReverseRelationConfig.permission`
-  2) `reverse_permission_policy` (admin-wide)
-  3) Default `user.has_perm("app.change_model")` on the reverse model
-- Error message precedence: field override → per-field policy object → global policy object → default
-- Disable vs hide:
-  - "disable": render read-only and ignore posted changes. To avoid spurious validation, the mixin sets `required=False` on disabled reverse fields so forms won’t raise “This field is required.” when there is no initial value.
-  - "hide": remove the field entirely.
-- Optional: set `reverse_render_uses_field_policy=True` to have render-time visibility/disabled state decided by your per-field/global policy (called with `selection=None`).
-
-Hidden/disabled fields are always ignored on save, so crafted POSTs cannot change unauthorized reverse fields.
-
----
-
-## API surface
-
-Import:
-
-```python
-from django_admin_reversefields.mixins import ReverseRelationAdminMixin, ReverseRelationConfig
-```
-
-`ReverseRelationConfig` (per virtual field):
-
-- `model`: reverse-side `models.Model` that holds the ForeignKey to the admin model
-- `fk_field`: name of that ForeignKey on `model`
-- `label`, `help_text`: optional display strings
-- `required`: enforce non-empty selection (default False)
-- `multiple`: multi-select that syncs many rows (default False)
-- `limit_choices_to`: callable `(qs, instance, request) -> qs` or `dict` passed to `.filter(**dict)`
-- `widget`: widget instance or class; defaults to admin `Select`/`FilteredSelectMultiple`
-- `ordering`: iterable for `.order_by()`
-- `clean(instance, selection, request)`: optional domain validation; raise `forms.ValidationError` to block
-- `permission`: optional policy (callable or object with `has_perm(...)`) to allow/deny edits
-- `permission_denied_message`: message used when a denial becomes a field error
-- `bulk`: when True, perform unbind/bind via `.update()` (bypasses model signals)
-
-Mixin knobs:
-
-- `reverse_relations`: mapping of virtual field name → config
-- `reverse_relations_atomic`: wrap all updates in one transaction (default True)
-- `reverse_permissions_enabled`: enforce permission checks (default False)
-- `reverse_permission_mode`: "disable" | "hide"
-- `reverse_permission_policy`: optional global policy
-- `reverse_render_uses_field_policy`: use per-field/global policy at render time (selection=None)
-
----
-
-## Recipes and docs
-
-- [Quickstart](https://tnware.github.io/django-admin-reversefields/quickstart.html)
-- [Concepts & Architecture](https://tnware.github.io/django-admin-reversefields/concepts.html)
-- [Configuration](https://tnware.github.io/django-admin-reversefields/configuration.html)
-- [Recipes](https://tnware.github.io/django-admin-reversefields/recipes.html)
-- [Caveats](https://tnware.github.io/django-admin-reversefields/caveats.html)
+Include each virtual field name in `fieldsets` (or `fields`). When you save the parent, the mixin updates the child rows’ foreign keys to match the current selection.
 
 ---
 
 ## Development
 
-We use [`uv`](https://github.com/astral-sh/uv) for tooling.
+This project uses `uv` for local tooling.
 
-- `uv sync` — install project + docs deps
-- `uv run ruff check .` — lint
-- `uv run django-admin test` or `uv run python manage.py test` — tests
-- `uv run sphinx-build -b html docs docs/_build/html -W` — docs build
+Setup:
 
-Release:
+    uv sync
 
-```bash
-uv build
-Twine upload dist/*
-```
+Common commands:
+
+    uv run ruff check .
+    uv run django-admin test
+    uv run sphinx-build -b html docs docs/_build/html -W
+
+Run the demo/test app:
+
+    export DJANGO_DB_NAME=db.sqlite3
+    uv run python manage.py migrate
+    uv run python manage.py seed
+    uv run python manage.py runserver
+
+Log in at `/admin/` with `admin` / `admin` and edit a company to see the reverse fields.
+
+---
+
+## Release
+
+    uv build
+    twine upload dist/*
+
+---
+
+## License
+
+See [LICENSE](LICENSE)
