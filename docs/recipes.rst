@@ -114,7 +114,7 @@ Permissions on reverse fields
    :open:
 
    .. seealso::
-      For a deep dive into the permission system, see the :doc:`permissions-guide`.
+      For a deep dive into the permission system, see the :doc:`configuration`.
 
    Require ``change`` permission on the reverse model, with disabled field mode:
 

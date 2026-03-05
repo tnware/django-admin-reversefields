@@ -3,8 +3,8 @@ Caveats
 
 This page highlights operational edge-cases and limitations that are easy to
 overlook while following the happy-path guides (:doc:`quickstart`,
-:doc:`recipes`). Use it alongside :doc:`data-integrity` and
-:doc:`permissions-guide` when planning production roll-outs.
+:doc:`recipes`). Use it alongside :doc:`concepts` and
+:doc:`configuration` when planning production roll-outs.
 
 .. contents:: Page contents
    :local:
@@ -25,7 +25,7 @@ ForeignKey requirements
 .. seealso::
 
    The persistence order (unbind before bind) is documented in
-   :doc:`data-integrity`.
+   :doc:`concepts`.
 
 Transactional behaviour
 -----------------------
@@ -55,10 +55,10 @@ Display customisation
 The default widgets mirror the Django admin look-and-feel. Override
 ``ReverseRelationConfig.widget`` to plug in custom widgets (e.g. Unfold, DAL) or
 see the :doc:`advanced` gallery for end-to-end examples. For request-aware
-choice limiting, revisit :doc:`querysets-and-widgets`.
+choice limiting, revisit :doc:`configuration`.
 
 For how fields are included in the form and when they are visible vs. disabled,
-see :doc:`rendering`.
+see :doc:`configuration`.
 
 Permission interplay
 --------------------
@@ -70,14 +70,14 @@ Permission interplay
    Denied fields are ignored during save (including hidden/disabled fields), so
    crafted POSTs cannot sidestep the check. The render-time behaviour is controlled by
    :attr:`~django_admin_reversefields.mixins.ReverseRelationAdminMixin.reverse_permission_mode`
-   (``"disable"`` or ``"hide"``). Refer back to :doc:`permissions-guide` for the
+   (``"disable"`` or ``"hide"``). Refer back to :doc:`configuration` for the
    evaluation flow and error-message precedence.
 
    By default, the render gate consults only a base/global permission. To let
    per-field/global policies influence visibility/editability, set
    ``reverse_render_uses_field_policy=True`` on the admin.
 
-   See :doc:`rendering` for the end-to-end visibility and editability flow.
+   See :doc:`configuration` for the end-to-end visibility and editability flow.
 
 One-to-one specifics
 --------------------
