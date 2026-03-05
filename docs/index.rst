@@ -32,17 +32,13 @@ Contents
    :caption: How it works
    :maxdepth: 1
 
-   core-concepts
-   architecture
+   concepts
 
 .. toctree::
    :caption: Configuring behavior
    :maxdepth: 1
 
-   data-integrity
-   rendering
-   querysets-and-widgets
-   permissions-guide
+   configuration
    advanced
 
 .. toctree::

@@ -119,4 +119,5 @@ class CompanySettings(models.Model):
         verbose_name_plural = "company settings"
 
     def __str__(self) -> str:  # pragma: no cover - repr helper for admin/tests
-        return f"Settings for {self.company.name}"
+        company_name = self.company.name if self.company else "Unassigned"
+        return f"Settings for {company_name}"

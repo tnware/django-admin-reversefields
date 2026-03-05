@@ -4,11 +4,15 @@ on:
     push:
         branches: [main]
         paths-ignore:
-            - "README.md"
+            - "*.md"
+            - "docs/**"
+            - ".github/release-drafter.yml"
     pull_request:
-        paths-ignore:
-            - "README.md"
         branches: [main]
+        paths-ignore:
+            - "*.md"
+            - "docs/**"
+            - ".github/release-drafter.yml"
 
 jobs:
     test:

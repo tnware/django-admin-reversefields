@@ -143,12 +143,10 @@ Mixin knobs:
 ## Recipes and docs
 
 - [Quickstart](https://tnware.github.io/django-admin-reversefields/quickstart.html)
-- [Core concepts](https://tnware.github.io/django-admin-reversefields/core-concepts.html)
-- [Permissions](https://tnware.github.io/django-admin-reversefields/permissions-guide.html)
-- [Architecture](https://tnware.github.io/django-admin-reversefields/architecture.html)
+- [Concepts & Architecture](https://tnware.github.io/django-admin-reversefields/concepts.html)
+- [Configuration](https://tnware.github.io/django-admin-reversefields/configuration.html)
 - [Recipes](https://tnware.github.io/django-admin-reversefields/recipes.html)
 - [Caveats](https://tnware.github.io/django-admin-reversefields/caveats.html)
-- [Rendering & Visibility](https://tnware.github.io/django-admin-reversefields/rendering.html)
 
 ---
 

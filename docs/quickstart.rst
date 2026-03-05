@@ -11,7 +11,7 @@ few steps.
 
 .. seealso::
 
-   Explore :doc:`core-concepts` for the lifecycle of the injected
+   Explore :doc:`concepts` for the lifecycle of the injected
    :term:`virtual fields <Virtual Field>` and dive into :doc:`recipes` for
    end-to-end examples, including permissions and validation hooks.
 
@@ -173,7 +173,7 @@ What happens on save?
    #. On ``form.save()``, the mixin applies transactional updates—unbind first,
       then bind—to keep the database consistent. When ``bulk=True``, operations
       use ``.update()`` for better performance. For details, see
-      :doc:`data-integrity`.
+      :doc:`concepts`.
 
 
 Next steps
@@ -183,7 +183,7 @@ Next steps
 
 - Follow the :ref:`recipe-single-binding` and
   :ref:`recipe-multiple-binding` walkthroughs for complete admin setups.
-- Enforce permissions with :doc:`permissions-guide` and
+- Enforce permissions with :doc:`configuration` and
   :ref:`recipe-permissions`.
 - Consult the :doc:`api` reference when you need to override lifecycle methods
   such as :meth:`~django_admin_reversefields.mixins.ReverseRelationAdminMixin.has_reverse_change_permission`.
