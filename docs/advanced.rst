@@ -8,14 +8,14 @@ Advanced configuration examples and third-party widget integrations.
    :local:
 
 .. seealso::
-   The :ref:`recipe-ajax-widget` provides a complete, end-to-end recipe for
-   integrating third-party AJAX widgets.
+   The :ref:`recipe-ajax-widget` provides a practical integration pattern for
+   third-party AJAX widgets.
 
 Widgets
 -------
 
 -  **Default single-select**: ``forms.Select``
--  **Default multi-select**: ``forms.FilteredSelectMultiple``
+-  **Default multi-select**: ``django.contrib.admin.widgets.FilteredSelectMultiple``
 -  **Custom**: Any Django form widget, including those from third-party apps
    like `django-autocomplete-light <https://django-autocomplete-light.readthedocs.io/>`_,
    can be provided via ``ReverseRelationConfig.widget``.
