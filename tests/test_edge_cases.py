@@ -1,6 +1,7 @@
 """Tests for edge cases and non-parameterizable scenarios."""
 
 # Test imports
+from django import forms
 from django.contrib import admin
 from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
@@ -383,6 +384,61 @@ class EdgeCasesTests(BaseAdminMixinTestCase):
         # After rollback, binding should not exist
         settings_a.refresh_from_db()
         self.assertIsNone(settings_a.company)
+
+    def test_bulk_atomic_rollback_across_multiple_fields(self):
+        """Bulk updates across fields should roll back as one unit on failure."""
+
+        class TestAdmin(ReverseRelationAdminMixin, admin.ModelAdmin):
+            reverse_relations = {
+                "department_binding": ReverseRelationConfig(
+                    model=Department,
+                    fk_field="company",
+                    multiple=False,
+                    bulk=True,
+                ),
+                "project_binding": ReverseRelationConfig(
+                    model=Project,
+                    fk_field="company",
+                    multiple=False,
+                    bulk=True,
+                ),
+            }
+
+        department = Department.objects.create(name="Rollback Dept")
+        project = Project.objects.create(name="Rollback Project")
+
+        request = self.factory.post("/")
+        admin_inst = TestAdmin(Company, self.site)
+
+        original_bulk_bind = admin_inst._apply_bulk_bind
+
+        def fail_on_project_bind(config, instance, target_objects):
+            if config.model is Project:
+                raise forms.ValidationError("Forced bulk failure on project binding")
+            return original_bulk_bind(config, instance, target_objects)
+
+        admin_inst._apply_bulk_bind = fail_on_project_bind
+
+        form_cls = admin_inst.get_form(request, self.company)
+        form = form_cls(
+            {
+                "name": self.company.name,
+                "department_binding": department.pk,
+                "project_binding": project.pk,
+            },
+            instance=self.company,
+        )
+
+        self.assertTrue(form.is_valid())
+
+        with self.assertRaises(forms.ValidationError):
+            form.save()
+
+        # Department was processed first and would have been bound without rollback.
+        department.refresh_from_db()
+        project.refresh_from_db()
+        self.assertIsNone(department.company)
+        self.assertIsNone(project.company)
 
     def test_multiple_companies_complex_bindings(self):
         """Test base operations with multiple companies and complex binding patterns."""

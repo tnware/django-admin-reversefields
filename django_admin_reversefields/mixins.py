@@ -51,7 +51,7 @@ from typing import Any, Protocol
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
-from django.db import models, transaction
+from django.db import IntegrityError, models, transaction
 from django.http import HttpRequest
 
 PermissionCallable = Callable[
@@ -898,11 +898,7 @@ class ReverseRelationAdminMixin:
 
         Raises:
             forms.ValidationError: If database constraints prevent the unbind operation.
-            Exception: Any other database error during the bulk update.
         """
-        from django import forms
-        from django.db import IntegrityError
-
         try:
             # Build queryset for objects currently bound to this instance
             queryset = config.model._default_manager.filter(**{config.fk_field: instance})
@@ -911,17 +907,12 @@ class ReverseRelationAdminMixin:
             if exclude_pks:
                 queryset = queryset.exclude(pk__in=exclude_pks)
 
-            # Perform bulk unbind using .update()
-            if queryset.exists():
-                queryset.update(**{config.fk_field: None})
+            # .update() is a no-op on empty querysets and returns 0.
+            queryset.update(**{config.fk_field: None})
 
         except IntegrityError as e:
             raise forms.ValidationError(
                 f"Bulk unbind operation failed for {config.model._meta.verbose_name}: {e}"
-            ) from e
-        except Exception as e:
-            raise forms.ValidationError(
-                f"Unexpected error during bulk unbind operation: {e}"
             ) from e
 
     def _apply_bulk_bind(self, config: ReverseRelationConfig, instance, target_objects):
@@ -938,11 +929,7 @@ class ReverseRelationAdminMixin:
 
         Raises:
             forms.ValidationError: If database constraints prevent the bind operation.
-            Exception: Any other database error during the bulk update.
         """
-        from django import forms
-        from django.db import IntegrityError
-
         if not target_objects:
             return
 
@@ -965,8 +952,6 @@ class ReverseRelationAdminMixin:
             raise forms.ValidationError(
                 f"Bulk bind operation failed for {config.model._meta.verbose_name}: {e}"
             ) from e
-        except Exception as e:
-            raise forms.ValidationError(f"Unexpected error during bulk bind operation: {e}") from e
 
     def _apply_bulk_operations(self, config: ReverseRelationConfig, instance, selection):
         """Coordinate bulk unbind and bind operations for a reverse relation field.
@@ -982,44 +967,31 @@ class ReverseRelationAdminMixin:
                       iterable of objects for multi-select).
 
         Raises:
-            forms.ValidationError: If database constraints prevent the operations
-                                 or other errors occur during bulk updates.
+            forms.ValidationError: If database constraints prevent the operations.
         """
-        from django import forms
+        if config.multiple:
+            # Multi-select scenario
+            selected = list(selection) if selection else []
+            selected_ids = {obj.pk for obj in selected}
 
-        try:
-            if config.multiple:
-                # Multi-select scenario
-                selected = list(selection) if selection else []
-                selected_ids = {obj.pk for obj in selected}
+            # Step 1: Bulk unbind objects that are no longer selected
+            # (exclude the ones that should remain bound)
+            self._apply_bulk_unbind(config, instance, selected_ids)
 
-                # Step 1: Bulk unbind objects that are no longer selected
-                # (exclude the ones that should remain bound)
-                self._apply_bulk_unbind(config, instance, selected_ids)
+            # Step 2: Bulk bind newly selected objects
+            self._apply_bulk_bind(config, instance, selected)
 
-                # Step 2: Bulk bind newly selected objects
-                self._apply_bulk_bind(config, instance, selected)
+        else:
+            # Single-select scenario
+            target = selection
 
-            else:
-                # Single-select scenario
-                target = selection
+            # Step 1: Bulk unbind all current relations
+            # For single-select, we unbind everything first
+            self._apply_bulk_unbind(config, instance, set())
 
-                # Step 1: Bulk unbind all current relations
-                # For single-select, we unbind everything first
-                self._apply_bulk_unbind(config, instance, set())
-
-                # Step 2: Bulk bind the target (if provided)
-                if target:
-                    self._apply_bulk_bind(config, instance, [target])
-
-        except forms.ValidationError:
-            # Re-raise validation errors as-is
-            raise
-        except Exception as e:
-            # Wrap unexpected errors in ValidationError with meaningful message
-            raise forms.ValidationError(
-                f"Bulk operation failed for {config.model._meta.verbose_name}: {e}"
-            ) from e
+            # Step 2: Bulk bind the target (if provided)
+            if target:
+                self._apply_bulk_bind(config, instance, [target])
 
     def _apply_individual_operations(self, config: ReverseRelationConfig, instance, selection):
         """Apply bind/unbind operations using individual model saves.

@@ -464,3 +464,29 @@ class ParameterizedBindingTests(BaseAdminMixinTestCase):
                 self.assertEqual(project.company, obj)
                 self.assertEqual(department.company, obj)
                 self.assertIsNone(form._reverse_relation_data)
+
+    def test_single_select_resubmit_same_value_both_modes(self):
+        """Re-submitting the same single-select value should remain bound after save."""
+        for bulk_enabled in [False, True]:
+            with self.subTest(bulk_enabled=bulk_enabled):
+                department = Department.objects.create(name=f"Same Selection {bulk_enabled}")
+                admin_instance = create_parameterized_admin(bulk_enabled=bulk_enabled)
+                request = self.factory.post("/")
+                form_cls = admin_instance.get_form(request, self.company)
+
+                first_submit = form_cls(
+                    {"name": self.company.name, "department_binding": department.pk},
+                    instance=self.company,
+                )
+                self.assertTrue(first_submit.is_valid())
+                saved_company = first_submit.save()
+
+                second_submit = form_cls(
+                    {"name": self.company.name, "department_binding": department.pk},
+                    instance=saved_company,
+                )
+                self.assertTrue(second_submit.is_valid())
+                second_submit.save()
+
+                department.refresh_from_db()
+                self.assertEqual(department.company, saved_company)
