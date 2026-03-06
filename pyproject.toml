@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-admin-reversefields"
-version = "0.1.0"
+version = "0.2.0"
 description = "A Django mixin for easily including reverse relationships in your changeforms in the admin"
 authors = [{ name = "Tyler Woods", email = "tyler@tylermade.net" }]
 requires-python = ">=3.10"
