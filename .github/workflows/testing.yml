@@ -14,15 +14,51 @@ on:
             - "docs/**"
             - ".github/release-drafter.yml"
 
+concurrency:
+    group: tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
 jobs:
-    test:
-        name: Run Tests
+    test_pr:
+        name: Run PR Tests
+        if: github.event_name == 'pull_request'
         runs-on: ubuntu-latest
         strategy:
             fail-fast: false
             matrix:
                 include:
-                    # supporting Python 3.10-3.12
+                    - python-version: "3.11"
+                      django-version: "4.2"
+                    - python-version: "3.12"
+                      django-version: "5.2"
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install UV
+              uses: astral-sh/setup-uv@v5
+              with:
+                  version: "0.6.5"
+                  python-version: ${{ matrix.python-version }}
+                  enable-cache: true
+
+            - name: Create venv and install dependencies
+              run: |
+                  uv venv
+                  uv pip install "django==${{ matrix.django-version }}"
+                  uv sync --all-extras --dev
+
+            - name: Run Tests
+              run: uv run python manage.py test -v 2
+
+    test_main:
+        name: Run Full Matrix on Main
+        if: github.event_name == 'push'
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
                     - python-version: "3.10"
                       django-version: "4.2"
                     - python-version: "3.11"
